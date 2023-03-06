@@ -92,29 +92,14 @@ Records Grab_Dept_Record(fstream &deptin) {
 }
 
 // Write the joined record to the output file
-void Write_Joined_Record(fstream &outfile, Records joined) {
-    outfile << joined.emp_record.eid << ","
-        << joined.emp_record.ename << ","
-        << joined.emp_record.age << ","
-        << joined.emp_record.salary << ","
-        << joined.dept_record.did << ","
-        << joined.dept_record.dname << ","
-        << joined.dept_record.budget << endl;
-}
-
-// Creates a new record called joined that contains the emp_record and dept_record
-Records Join_Records(Records emp, Records dept) {
-    Records joined;
-    joined.emp_record.eid = emp.emp_record.eid;
-    joined.emp_record.ename = emp.emp_record.ename;
-    joined.emp_record.age = emp.emp_record.age;
-    joined.emp_record.salary = emp.emp_record.salary;
-    joined.dept_record.did = dept.dept_record.did;
-    joined.dept_record.dname = dept.dept_record.dname;
-    joined.dept_record.budget = dept.dept_record.budget;
-    joined.dept_record.managerid = dept.dept_record.managerid;
-
-    return joined;
+void Write_Joined_Record(fstream &outfile, Records emp, Records dept) {
+    outfile << emp.emp_record.eid << ","
+        << emp.emp_record.ename << ","
+        << emp.emp_record.age << ","
+        << emp.emp_record.salary << ","
+        << dept.dept_record.did << ","
+        << dept.dept_record.dname << ","
+        << dept.dept_record.budget << endl;
 }
 
 // Open the sorted Emp.csv file and Dept.csv file and merge them into a single file
@@ -130,7 +115,7 @@ void Sort_Merge(string sorted_emp_file, string sorted_dept_file, string output_f
     while (!done) {
         if (emp.emp_record.eid == dept.dept_record.managerid) {
             // Join the two records and write to output file
-            Write_Joined_Record(outfile, Join_Records(emp, dept));
+            Write_Joined_Record(outfile, emp, dept);
         } else {
             if (emp.emp_record.eid < dept.dept_record.managerid) {
                 // Grab next emp record
