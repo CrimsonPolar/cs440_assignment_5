@@ -119,9 +119,9 @@ Records Join_Records(Records emp, Records dept) {
 
 // Open the sorted Emp.csv file and Dept.csv file and merge them into a single file
 void Sort_Merge(string sorted_emp_file, string sorted_dept_file, string output_file) {
-    fstream empin(sorted_emp_file),
-        deptin(sorted_dept_file),
-        outfile(output_file);
+    fstream empin(sorted_emp_file, ios::in),
+        deptin(sorted_dept_file, ios::in),
+        outfile(output_file, ios::out | ios::trunc);
 
     Records emp = Grab_Emp_Record(empin);
     Records dept = Grab_Emp_Record(deptin);
