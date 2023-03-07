@@ -24,6 +24,8 @@ void Sort_Emp_Buffer(int runNumber, int n = buffer_size){
     return;
 }
 
+// Writes buffer to an employee runfile
+// Param n: number of entries in buffer
 void Write_Emp_Buffer(fstream &runfile, int n = buffer_size){
     for(int i = 0; i < n; i++){
         runfile << fixed << buffers[i].emp_record.eid << ","
@@ -33,6 +35,7 @@ void Write_Emp_Buffer(fstream &runfile, int n = buffer_size){
     }
 }
 
+// Creates employee runs from input
 int Create_Emp_Runs(fstream &empin){
     int runNum = 0;
     int ind = 0;
@@ -41,17 +44,21 @@ int Create_Emp_Runs(fstream &empin){
         ind++;
 
         if(ind == buffer_size || buffers[ind - 1].no_values == -1){
+            // if the runs end prematurely, ensure the buffer with the no_values = 1 value is not written to memory
             if(buffers[ind - 1].no_values == -1){
                 ind--;
             }
             // sort + write run
             Sort_Emp_Buffer(runNum, ind);
 
-            fstream runFile;
-            runFile.open("empRun" + std::to_string(runNum) + ".csv", ios::out | ios::trunc);
-            Write_Emp_Buffer(runFile, ind);
-            runFile.close();
-            runNum++;
+            if(ind != 0){
+                fstream runFile;
+                runFile.open("empRun" + std::to_string(runNum) + ".csv", ios::out | ios::trunc);
+                Write_Emp_Buffer(runFile, ind);
+                runFile.close();
+                runNum++;
+            }
+            
             // reset ind
             ind = 0;
         }
@@ -67,6 +74,8 @@ void Sort_Dept_Buffer(int runNumber, int n = buffer_size){
     return;
 }
 
+// Writes buffer to a department runfile
+// Param n: number of entries in buffer
 void Write_Dept_Buffer(fstream &runfile, int n = buffer_size){
     for(int i = 0; i < n; i++){
         runfile << fixed << buffers[i].dept_record.did << ","
@@ -76,6 +85,7 @@ void Write_Dept_Buffer(fstream &runfile, int n = buffer_size){
     }
 }
 
+// Creates dept runs from input
 int Create_Dept_Runs(fstream &deptin){
     int runNum = 0;
     int ind = 0;
@@ -90,11 +100,14 @@ int Create_Dept_Runs(fstream &deptin){
             // sort + write run
             Sort_Dept_Buffer(runNum, ind);
 
-            fstream runFile;
-            runFile.open("deptRun" + std::to_string(runNum) + ".csv", ios::out | ios::trunc);
-            Write_Dept_Buffer(runFile, ind);
-            runFile.close();
-            runNum++;
+            if(ind != 0){
+                fstream runFile;
+                runFile.open("deptRun" + std::to_string(runNum) + ".csv", ios::out | ios::trunc);
+                Write_Dept_Buffer(runFile, ind);
+                runFile.close();
+                runNum++;
+            }
+            
             // reset ind
             ind = 0;
         }
