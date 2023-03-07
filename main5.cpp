@@ -33,7 +33,7 @@ void Write_Emp_Buffer(fstream &runfile, int n = buffer_size){
     }
 }
 
-void Create_Emp_Runs(fstream &empin){
+int Create_Emp_Runs(fstream &empin){
     int runNum = 0;
     int ind = 0;
     while(!empin.eof()){
@@ -56,6 +56,7 @@ void Create_Emp_Runs(fstream &empin){
             ind = 0;
         }
     }
+    return runNum;
 }
 
 //Sorting the buffers in main_memory and storing the sorted records into a temporary file (runs) 
@@ -75,7 +76,7 @@ void Write_Dept_Buffer(fstream &runfile, int n = buffer_size){
     }
 }
 
-void Create_Dept_Runs(fstream &deptin){
+int Create_Dept_Runs(fstream &deptin){
     int runNum = 0;
     int ind = 0;
     while(!deptin.eof()){
@@ -98,6 +99,7 @@ void Create_Dept_Runs(fstream &deptin){
             ind = 0;
         }
     }
+    return runNum;
 }
 
 //Prints out the attributes from empRecord and deptRecord when a join condition is met 
@@ -130,8 +132,8 @@ int main() {
     joinout.open("Join.csv", ios::out | ios::app);
 
     //1. Create runs for Dept and Emp which are sorted using Sort_Buffer()
-    Create_Emp_Runs(empin);
-    Create_Dept_Runs(deptin);
+    int empRunNum = Create_Emp_Runs(empin);
+    int deptRunNum = Create_Dept_Runs(deptin);
 
 
     //2. Use Merge_Join_Runs() to Join the runs of Dept and Emp relations 
