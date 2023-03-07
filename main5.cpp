@@ -17,7 +17,7 @@ Records buffers[buffer_size]; //use this class object of size 22 as your main me
 
 
 //Sorting the buffers in main_memory and storing the sorted records into a temporary file (runs) 
-void Sort_Emp_Buffer(int runNumber, int n = buffer_size){
+void sortEmpBuffer(int runNumber, int n = buffer_size){
     // Sort the buffers in main memory based on 'emp_record.eid'
     sort(buffers, buffers + n, [](Records a, Records b)
          { return a.emp_record.eid < b.emp_record.eid; });
@@ -26,7 +26,7 @@ void Sort_Emp_Buffer(int runNumber, int n = buffer_size){
 
 // Writes buffer to an employee runfile
 // Param n: number of entries in buffer
-void Write_Emp_Buffer(fstream &runfile, int n = buffer_size){
+void writeEmpBuffer(fstream &runfile, int n = buffer_size){
     for(int i = 0; i < n; i++){
         runfile << fixed << buffers[i].emp_record.eid << ","
             << buffers[i].emp_record.ename << ","
@@ -36,7 +36,7 @@ void Write_Emp_Buffer(fstream &runfile, int n = buffer_size){
 }
 
 // Creates employee runs from input
-int Create_Emp_Runs(fstream &empin){
+int createEmpRuns(fstream &empin){
     int runNum = 0;
     int ind = 0;
     while(!empin.eof()){
@@ -49,12 +49,12 @@ int Create_Emp_Runs(fstream &empin){
                 ind--;
             }
             // sort + write run
-            Sort_Emp_Buffer(runNum, ind);
+            sortEmpBuffer(runNum, ind);
 
             if(ind != 0){
                 fstream runFile;
                 runFile.open("empRun" + std::to_string(runNum) + ".csv", ios::out | ios::trunc);
-                Write_Emp_Buffer(runFile, ind);
+                writeEmpBuffer(runFile, ind);
                 runFile.close();
                 runNum++;
             }
@@ -67,7 +67,7 @@ int Create_Emp_Runs(fstream &empin){
 }
 
 //Sorting the buffers in main_memory and storing the sorted records into a temporary file (runs) 
-void Sort_Dept_Buffer(int runNumber, int n = buffer_size){
+void sortDeptBuffer(int runNumber, int n = buffer_size){
     // Sort the buffers in main memory based on 'dept_record.managerid'
     sort(buffers, buffers + n, [](Records a, Records b)
          { return a.dept_record.managerid < b.dept_record.managerid; });
@@ -76,7 +76,7 @@ void Sort_Dept_Buffer(int runNumber, int n = buffer_size){
 
 // Writes buffer to a department runfile
 // Param n: number of entries in buffer
-void Write_Dept_Buffer(fstream &runfile, int n = buffer_size){
+void writeDeptBuffer(fstream &runfile, int n = buffer_size){
     for(int i = 0; i < n; i++){
         runfile << fixed << buffers[i].dept_record.did << ","
             << buffers[i].dept_record.dname << ","
@@ -86,7 +86,7 @@ void Write_Dept_Buffer(fstream &runfile, int n = buffer_size){
 }
 
 // Creates dept runs from input
-int Create_Dept_Runs(fstream &deptin){
+int createDeptRuns(fstream &deptin){
     int runNum = 0;
     int ind = 0;
     while(!deptin.eof()){
@@ -98,12 +98,12 @@ int Create_Dept_Runs(fstream &deptin){
                 ind--;
             }
             // sort + write run
-            Sort_Dept_Buffer(runNum, ind);
+            sortDeptBuffer(runNum, ind);
 
             if(ind != 0){
                 fstream runFile;
                 runFile.open("deptRun" + std::to_string(runNum) + ".csv", ios::out | ios::trunc);
-                Write_Dept_Buffer(runFile, ind);
+                writeDeptBuffer(runFile, ind);
                 runFile.close();
                 runNum++;
             }
@@ -113,6 +113,27 @@ int Create_Dept_Runs(fstream &deptin){
         }
     }
     return runNum;
+}
+
+// Removes all temporary run files
+int cleanupRuns(int empRunNum, int deptRunNum){
+    int ret = 0;
+    for(int i = 0; i < empRunNum; i++){
+        string filename = "empRun" + std::to_string(i) + ".csv";
+        if(remove(filename.c_str()) != 0){
+            cout << "\tError deleting file: " << filename << endl;
+            ret = 1;
+        }
+    }
+
+    for(int i = 0; i < deptRunNum; i++){
+        string filename = "deptRun" + std::to_string(i) + ".csv";
+        if(remove(filename.c_str()) != 0){
+            cout << "\tError deleting file: " << filename << endl;
+            ret = 1;
+        }
+    }
+    return ret;
 }
 
 //Prints out the attributes from empRecord and deptRecord when a join condition is met 
@@ -145,14 +166,13 @@ int main() {
     joinout.open("Join.csv", ios::out | ios::app);
 
     //1. Create runs for Dept and Emp which are sorted using Sort_Buffer()
-    int empRunNum = Create_Emp_Runs(empin);
-    int deptRunNum = Create_Dept_Runs(deptin);
+    int empRunNum = createEmpRuns(empin);
+    int deptRunNum = createDeptRuns(deptin);
 
 
     //2. Use Merge_Join_Runs() to Join the runs of Dept and Emp relations 
 
 
-    //Please delete the temporary files (runs) after you've joined both Emp.csv and Dept.csv
-
-    return 0;
+    // Deletes runs 
+    return cleanupRuns(empRunNum, deptRunNum);
 }
