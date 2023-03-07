@@ -138,8 +138,15 @@ int cleanupRuns(int empRunNum, int deptRunNum){
 
 //Prints out the attributes from empRecord and deptRecord when a join condition is met 
 //and puts it in file Join.csv
-void PrintJoin() {
-    
+void PrintJoin(fstream &outfile, Records emp, Records dept)
+{
+    outfile << emp.emp_record.eid << ","
+            << emp.emp_record.ename << ","
+            << emp.emp_record.age << ","
+            << emp.emp_record.salary << ","
+            << dept.dept_record.did << ","
+            << dept.dept_record.dname << ","
+            << dept.dept_record.budget << endl;
     return;
 }
 
