@@ -119,7 +119,7 @@ int createDeptRuns(fstream &deptin){
 int cleanupRuns(int empRunNum, int deptRunNum){
     int ret = 0;
     for(int i = 0; i < empRunNum; i++){
-        string filename = "empRun" + std::to_string(i) + ".csv";
+        string filename = "empRun" + to_string(i) + ".csv";
         if(remove(filename.c_str()) != 0){
             cout << "\tError deleting file: " << filename << endl;
             ret = 1;
@@ -127,7 +127,7 @@ int cleanupRuns(int empRunNum, int deptRunNum){
     }
 
     for(int i = 0; i < deptRunNum; i++){
-        string filename = "deptRun" + std::to_string(i) + ".csv";
+        string filename = "deptRun" + to_string(i) + ".csv";
         if(remove(filename.c_str()) != 0){
             cout << "\tError deleting file: " << filename << endl;
             ret = 1;
@@ -144,9 +144,20 @@ void PrintJoin() {
 }
 
 //Use main memory to Merge and Join tuples 
-//which are already sorted in 'runs' of the relations Dept and Emp 
-void Merge_Join_Runs(){
-   
+//which are already sorted in 'runs' of the relations Dept and Emp
+void Merge_Join_Runs(fstream &fileOut, int empNumRuns, int deptNumRuns) {
+    fstream emp_input_files[empNumRuns];
+    fstream dept_input_files[deptNumRuns];
+
+    // Open all of the runs files and the output file
+    for (int i = 0; i < empNumRuns; i++) {
+        string filename = "empRun" + to_string(i) + ".csv";
+        emp_input_files[i].open(filename, ios::in);
+    }
+    for (int i = 0; i < deptNumRuns; i++) {
+        string filename = "deptRun" + to_string(i) + ".csv";
+        dept_input_files[i].open(filename, ios::in);
+    }
 
     //and store the Joined new tuples using PrintJoin() 
     return;

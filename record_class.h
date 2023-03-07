@@ -102,7 +102,10 @@ void Write_Joined_Record(fstream &outfile, Records emp, Records dept) {
         << dept.dept_record.budget << endl;
 }
 
-// Open the sorted Emp.csv file and Dept.csv file and merge them into a single file
+// Open a sorted Emp.csv file and a Dept.csv file and merge them into a single file
+// This is a standard sort-merge join, not the optimized version we discussed in class
+// This mainly here as a reference for the optimized version
+// Algorithm based on pseudocode from https://youtu.be/jiWCPJtDE2c
 void Sort_Merge(string sorted_emp_file, string sorted_dept_file, string output_file) {
     fstream empin(sorted_emp_file, ios::in),
         deptin(sorted_dept_file, ios::in),
