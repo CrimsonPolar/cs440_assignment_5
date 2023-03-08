@@ -141,7 +141,7 @@ int cleanupRuns(int empRunNum, int deptRunNum){
 // params are by reference to not overstep the 22 block memory requirement
 void PrintJoin(fstream &outfile, Records &emp, Records &dept)
 {
-    outfile << emp.emp_record.eid << ","
+    outfile << fixed << emp.emp_record.eid << ","
             << emp.emp_record.ename << ","
             << emp.emp_record.age << ","
             << emp.emp_record.salary << ","
@@ -221,13 +221,16 @@ void Merge_Join_Runs(fstream &fileOut, int empNumRuns, int deptNumRuns) {
             buffers[nextDept] = Grab_Dept_Record(dept_input_files[nextDept - deptIndStart]);
             nextDept = findNextDeptRecord(deptIndStart, deptIndEnd);
         } else {
-            PrintJoin(fileOut, buffers[nextEmp], buffers[nextDept]);
-            
+            // loop to match identical dept managers
+            // not doing the same for emp because eid is a key, managerid is not (did is)
+            while(buffers[nextEmp].emp_record.eid == buffers[nextDept].dept_record.managerid) {
+                PrintJoin(fileOut, buffers[nextEmp], buffers[nextDept]);
+
+                buffers[nextDept] = Grab_Dept_Record(dept_input_files[nextDept - deptIndStart]);
+                nextDept = findNextDeptRecord(deptIndStart, deptIndEnd);
+            }
             buffers[nextEmp] = Grab_Emp_Record(emp_input_files[nextEmp - empIndStart]);
             nextEmp = findNextEmpRecord(empIndStart, empIndEnd);
-
-            buffers[nextDept] = Grab_Dept_Record(dept_input_files[nextDept - deptIndStart]);
-            nextDept = findNextDeptRecord(deptIndStart, deptIndEnd);
         }
     }
     //and store the Joined new tuples using PrintJoin() 
@@ -247,7 +250,7 @@ int main() {
    
     //Creating the Join.csv file where we will store our joined results
     fstream joinout;
-    joinout.open("Join.csv", ios::out | ios::app);
+    joinout.open("Join.csv", ios::out | ios::trunc);
 
     //1. Create runs for Dept and Emp which are sorted using Sort_Buffer()
     int empRunNum = createEmpRuns(empin);
