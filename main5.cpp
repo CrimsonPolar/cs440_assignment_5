@@ -119,7 +119,7 @@ int createDeptRuns(fstream &deptin){
 int cleanupRuns(int empRunNum, int deptRunNum){
     int ret = 0;
     for(int i = 0; i < empRunNum; i++){
-        string filename = "empRun" + std::to_string(i) + ".csv";
+        string filename = "empRun" + to_string(i) + ".csv";
         if(remove(filename.c_str()) != 0){
             cout << "\tError deleting file: " << filename << endl;
             ret = 1;
@@ -127,7 +127,7 @@ int cleanupRuns(int empRunNum, int deptRunNum){
     }
 
     for(int i = 0; i < deptRunNum; i++){
-        string filename = "deptRun" + std::to_string(i) + ".csv";
+        string filename = "deptRun" + to_string(i) + ".csv";
         if(remove(filename.c_str()) != 0){
             cout << "\tError deleting file: " << filename << endl;
             ret = 1;
@@ -136,19 +136,109 @@ int cleanupRuns(int empRunNum, int deptRunNum){
     return ret;
 }
 
-//Prints out the attributes from empRecord and deptRecord when a join condition is met 
-//and puts it in file Join.csv
-void PrintJoin() {
-    
+// Prints out the attributes from empRecord and deptRecord when a join condition is met 
+// and puts it in file Join.csv
+// params are by reference to not overstep the 22 block memory requirement
+void PrintJoin(fstream &outfile, Records &emp, Records &dept)
+{
+    outfile << fixed << emp.emp_record.eid << ","
+            << emp.emp_record.ename << ","
+            << emp.emp_record.age << ","
+            << emp.emp_record.salary << ","
+            << dept.dept_record.did << ","
+            << dept.dept_record.dname << ","
+            << dept.dept_record.budget << endl;
     return;
 }
 
-//Use main memory to Merge and Join tuples 
-//which are already sorted in 'runs' of the relations Dept and Emp 
-void Merge_Join_Runs(){
-   
+int findNextEmpRecord(int empIndStart, int empIndEnd){
+    int nextInd = empIndStart;
+    for(int i = empIndStart + 1; i < empIndEnd; i++){
+        if(buffers[i].no_values != -1){
+            if(buffers[i].emp_record.eid < buffers[nextInd].emp_record.eid){
+                nextInd = i;
+            }
+        }
+    }
+    if(buffers[nextInd].no_values == -1){
+        nextInd = -1;
+    }
+    return nextInd;
+}
 
+int findNextDeptRecord(int deptIndStart, int deptIndEnd){
+    int nextInd = deptIndStart;
+    for(int i = deptIndStart + 1; i < deptIndEnd; i++){
+        if(buffers[i].no_values != -1){
+            if(buffers[i].dept_record.managerid < buffers[nextInd].dept_record.managerid){
+                nextInd = i;
+            }
+        }
+    }
+    if(buffers[nextInd].no_values == -1){
+        nextInd = -1;
+    }
+    return nextInd;
+}
+
+//Use main memory to Merge and Join tuples 
+//which are already sorted in 'runs' of the relations Dept and Emp
+void Merge_Join_Runs(fstream &fileOut, int empNumRuns, int deptNumRuns) {
+    if(empNumRuns + deptNumRuns > buffer_size){
+        throw new runtime_error("\tdept and emp relations are too large for the memory restriction of sort-merge join. Aborting.");
+    }
+    fstream emp_input_files[empNumRuns];
+    fstream dept_input_files[deptNumRuns];
+
+    // indecies for tracking blocks in buffers
+    //   indecies are inclusive of start, exclusive of end
+    int empIndStart = 0;
+    int empIndEnd = empNumRuns;
+    int deptIndStart = empNumRuns;
+    int deptIndEnd = empNumRuns + deptNumRuns;
+
+    // Open all of the runs files and read entries to buffer
+    for (int i = 0; i < empNumRuns; i++) {
+        string filename = "empRun" + to_string(i) + ".csv";
+        emp_input_files[i].open(filename, ios::in);
+
+        buffers[empIndStart + i] = Grab_Emp_Record(emp_input_files[i]);
+    }
+    for (int i = 0; i < deptNumRuns; i++) {
+        string filename = "deptRun" + to_string(i) + ".csv";
+        dept_input_files[i].open(filename, ios::in);
+
+        buffers[deptIndStart + i] = Grab_Dept_Record(dept_input_files[i]);
+    }
+
+    // Find initial states
+    int nextEmp = findNextEmpRecord(empIndStart, empIndEnd);
+    int nextDept = findNextDeptRecord(deptIndStart, deptIndEnd);
+
+    // Until either relation is out of blocks
+    while(nextEmp != -1 && nextDept != -1){
+        if(buffers[nextEmp].emp_record.eid < buffers[nextDept].dept_record.managerid){
+            buffers[nextEmp] = Grab_Emp_Record(emp_input_files[nextEmp - empIndStart]);
+            nextEmp = findNextEmpRecord(empIndStart, empIndEnd);
+        } else if(buffers[nextEmp].emp_record.eid > buffers[nextDept].dept_record.managerid){
+            buffers[nextDept] = Grab_Dept_Record(dept_input_files[nextDept - deptIndStart]);
+            nextDept = findNextDeptRecord(deptIndStart, deptIndEnd);
+        } else {
+            // loop to match identical dept managers
+            // not doing the same for emp because eid is a key, managerid is not (did is)
+            while(buffers[nextEmp].emp_record.eid == buffers[nextDept].dept_record.managerid) {
+                PrintJoin(fileOut, buffers[nextEmp], buffers[nextDept]);
+
+                buffers[nextDept] = Grab_Dept_Record(dept_input_files[nextDept - deptIndStart]);
+                nextDept = findNextDeptRecord(deptIndStart, deptIndEnd);
+            }
+            buffers[nextEmp] = Grab_Emp_Record(emp_input_files[nextEmp - empIndStart]);
+            nextEmp = findNextEmpRecord(empIndStart, empIndEnd);
+        }
+    }
     //and store the Joined new tuples using PrintJoin() 
+
+    // close filestreams and cleanup
     return;
 }
 
@@ -163,7 +253,7 @@ int main() {
    
     //Creating the Join.csv file where we will store our joined results
     fstream joinout;
-    joinout.open("Join.csv", ios::out | ios::app);
+    joinout.open("Join.csv", ios::out | ios::trunc);
 
     //1. Create runs for Dept and Emp which are sorted using Sort_Buffer()
     int empRunNum = createEmpRuns(empin);
@@ -171,7 +261,7 @@ int main() {
 
 
     //2. Use Merge_Join_Runs() to Join the runs of Dept and Emp relations 
-
+    Merge_Join_Runs(joinout, empRunNum, deptRunNum);
 
     // Deletes runs 
     return cleanupRuns(empRunNum, deptRunNum);
