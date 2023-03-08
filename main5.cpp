@@ -184,6 +184,9 @@ int findNextDeptRecord(int deptIndStart, int deptIndEnd){
 //Use main memory to Merge and Join tuples 
 //which are already sorted in 'runs' of the relations Dept and Emp
 void Merge_Join_Runs(fstream &fileOut, int empNumRuns, int deptNumRuns) {
+    if(empNumRuns + deptNumRuns > buffer_size){
+        throw new runtime_error("\tdept and emp relations are too large for the memory restriction of sort-merge join. Aborting.");
+    }
     fstream emp_input_files[empNumRuns];
     fstream dept_input_files[deptNumRuns];
 
