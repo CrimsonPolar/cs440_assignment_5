@@ -136,9 +136,10 @@ int cleanupRuns(int empRunNum, int deptRunNum){
     return ret;
 }
 
-//Prints out the attributes from empRecord and deptRecord when a join condition is met 
-//and puts it in file Join.csv
-void PrintJoin(fstream &outfile, Records emp, Records dept)
+// Prints out the attributes from empRecord and deptRecord when a join condition is met 
+// and puts it in file Join.csv
+// params are by reference to not overstep the 22 block memory requirement
+void PrintJoin(fstream &outfile, Records &emp, Records &dept)
 {
     outfile << emp.emp_record.eid << ","
             << emp.emp_record.ename << ","
@@ -150,23 +151,88 @@ void PrintJoin(fstream &outfile, Records emp, Records dept)
     return;
 }
 
+int findNextEmpRecord(int empIndStart, int empIndEnd){
+    int nextInd = empIndStart;
+    for(int i = empIndStart + 1; i < empIndEnd; i++){
+        if(buffers[i].no_values != -1){
+            if(buffers[i].emp_record.eid < buffers[nextInd].emp_record.eid){
+                nextInd = i;
+            }
+        }
+    }
+    if(buffers[nextInd].no_values == -1){
+        nextInd = -1;
+    }
+    return nextInd;
+}
+
+int findNextDeptRecord(int deptIndStart, int deptIndEnd){
+    int nextInd = deptIndStart;
+    for(int i = deptIndStart + 1; i < deptIndEnd; i++){
+        if(buffers[i].no_values != -1){
+            if(buffers[i].dept_record.managerid < buffers[nextInd].dept_record.managerid){
+                nextInd = i;
+            }
+        }
+    }
+    if(buffers[nextInd].no_values == -1){
+        nextInd = -1;
+    }
+    return nextInd;
+}
+
 //Use main memory to Merge and Join tuples 
 //which are already sorted in 'runs' of the relations Dept and Emp
 void Merge_Join_Runs(fstream &fileOut, int empNumRuns, int deptNumRuns) {
     fstream emp_input_files[empNumRuns];
     fstream dept_input_files[deptNumRuns];
 
-    // Open all of the runs files and the output file
+    // indecies for tracking blocks in buffers
+    //   indecies are inclusive of start, exclusive of end
+    int empIndStart = 0;
+    int empIndEnd = empNumRuns;
+    int deptIndStart = empNumRuns;
+    int deptIndEnd = empNumRuns + deptNumRuns;
+
+    // Open all of the runs files and read entries to buffer
     for (int i = 0; i < empNumRuns; i++) {
         string filename = "empRun" + to_string(i) + ".csv";
         emp_input_files[i].open(filename, ios::in);
+
+        buffers[empIndStart + i] = Grab_Emp_Record(emp_input_files[i]);
     }
     for (int i = 0; i < deptNumRuns; i++) {
         string filename = "deptRun" + to_string(i) + ".csv";
         dept_input_files[i].open(filename, ios::in);
+
+        buffers[deptIndStart + i] = Grab_Dept_Record(dept_input_files[i]);
     }
 
+    // Find initial states
+    int nextEmp = findNextEmpRecord(empIndStart, empIndEnd);
+    int nextDept = findNextDeptRecord(deptIndStart, deptIndEnd);
+
+    // Until either relation is out of blocks
+    while(nextEmp != -1 && nextDept != -1){
+        if(buffers[nextEmp].emp_record.eid < buffers[nextDept].dept_record.managerid){
+            buffers[nextEmp] = Grab_Emp_Record(emp_input_files[nextEmp - empIndStart]);
+            nextEmp = findNextEmpRecord(empIndStart, empIndEnd);
+        } else if(buffers[nextEmp].emp_record.eid > buffers[nextDept].dept_record.managerid){
+            buffers[nextDept] = Grab_Dept_Record(dept_input_files[nextDept - deptIndStart]);
+            nextDept = findNextDeptRecord(deptIndStart, deptIndEnd);
+        } else {
+            PrintJoin(fileOut, buffers[nextEmp], buffers[nextDept]);
+            
+            buffers[nextEmp] = Grab_Emp_Record(emp_input_files[nextEmp - empIndStart]);
+            nextEmp = findNextEmpRecord(empIndStart, empIndEnd);
+
+            buffers[nextDept] = Grab_Dept_Record(dept_input_files[nextDept - deptIndStart]);
+            nextDept = findNextDeptRecord(deptIndStart, deptIndEnd);
+        }
+    }
     //and store the Joined new tuples using PrintJoin() 
+
+    // close filestreams and cleanup
     return;
 }
 
@@ -189,7 +255,7 @@ int main() {
 
 
     //2. Use Merge_Join_Runs() to Join the runs of Dept and Emp relations 
-
+    Merge_Join_Runs(joinout, empRunNum, deptRunNum);
 
     // Deletes runs 
     return cleanupRuns(empRunNum, deptRunNum);
